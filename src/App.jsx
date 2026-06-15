@@ -23,8 +23,8 @@ import {
   X
 } from "lucide-react";
 
-const BACKEND_PORT = 5005;
-const API_BASE = `${window.location.protocol}//${window.location.hostname}:${BACKEND_PORT}/api/v1`;
+const BACKEND_URL = "https://paw-connect-store.vercel.app";
+const API_BASE = `${BACKEND_URL}/api/v1`;
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem("token") || "");
