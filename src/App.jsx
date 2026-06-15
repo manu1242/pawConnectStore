@@ -23,7 +23,7 @@ import {
   X
 } from "lucide-react";
 
-const BACKEND_URL = "https://paw-connect-store.vercel.app";
+const BACKEND_URL = "https://pawconnectbackend.onrender.com";
 const API_BASE = `${BACKEND_URL}/api/v1`;
 
 function App() {
