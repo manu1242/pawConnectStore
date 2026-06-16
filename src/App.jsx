@@ -13,6 +13,7 @@ import StoreProfile from "./pages/StoreProfile";
 import ServicesList from "./pages/Services/ServicesList";
 import ServiceDetails from "./pages/Services/ServiceDetails";
 import ServiceForm from "./pages/Services/ServiceForm";
+import Promos from "./pages/Promos";
 
 function AppContent() {
   const { 
@@ -177,6 +178,7 @@ function AppContent() {
           <Route path="/services/new" element={<ServiceForm />} />
           <Route path="/services/:id" element={<ServiceDetails />} />
           <Route path="/services/:id/edit" element={<ServiceForm />} />
+          <Route path="/promos" element={<Promos />} />
           <Route path="*" element={<Navigate to="/bookings" replace />} />
         </Routes>
       </main>

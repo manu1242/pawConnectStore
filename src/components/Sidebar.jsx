@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { Calendar, Store, Sparkles, LogOut, Shield } from "lucide-react";
+import { Calendar, Store, Sparkles, LogOut, Shield, Tag } from "lucide-react";
 import { useStore } from "../context/StoreContext";
 
 function Sidebar() {
@@ -31,6 +31,14 @@ function Sidebar() {
         >
           <Sparkles size={20} />
           <span>Service Management</span>
+        </NavLink>
+
+        <NavLink
+          to="/promos"
+          className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
+        >
+          <Tag size={20} />
+          <span>Promo Codes</span>
         </NavLink>
 
         <NavLink
