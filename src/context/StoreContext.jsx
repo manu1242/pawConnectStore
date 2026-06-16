@@ -147,7 +147,16 @@ export const StoreProvider = ({ children }) => {
 
   const updateStore = async (storeData) => {
     try {
-      const res = await axios.patch(`${API_BASE}/stores`, storeData, {
+      // Merge existing store details to avoid backend validation/override bugs
+      const mergedData = store ? {
+        ...store,
+        ...storeData,
+        address: storeData.address !== undefined ? storeData.address : store.address,
+        addressDetails: storeData.addressDetails !== undefined ? storeData.addressDetails : store.addressDetails,
+        ownerDetails: storeData.ownerDetails !== undefined ? storeData.ownerDetails : store.ownerDetails,
+      } : storeData;
+
+      const res = await axios.patch(`${API_BASE}/stores`, mergedData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.data.success) {
