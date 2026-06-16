@@ -6,13 +6,14 @@ import {
   Plus, 
   Trash2, 
   Loader2, 
-  Sparkles,
-  Info,
-  DollarSign,
-  FileText,
   Clock,
+  Check,
+  Home,
+  AlertTriangle,
   Shield,
-  Search
+  Percent,
+  Calendar,
+  Sparkles
 } from "lucide-react";
 import { useStore } from "../../context/StoreContext";
 import { parseService, serializeService } from "../../utils/serviceHelper";
@@ -23,69 +24,24 @@ function ServiceForm() {
   const { store, updateStore } = useStore();
   const isEditMode = !!id;
 
-  const [activeTab, setActiveTab] = useState("basic");
   const [loading, setLoading] = useState(false);
-
-  // Form states
   const [formData, setFormData] = useState({
     name: "",
     category: "Pet Grooming",
-    description: "",
-    shortDescription: "",
     photo: "",
-    images: [],
-    video: "",
+    description: "",
     originalPrice: "",
-    offerPrice: "",
-    discountPercentage: 0,
-    taxIncluded: true,
-    homeVisitCharges: 0,
-    emergencyCharges: 0,
-    weekendCharges: 0,
-    festivalCharges: 0,
+    offerEnabled: false,
+    offerType: "",
+    discountAmount: "",
+    offerTitle: "",
+    offerEndDate: "",
     duration: "60 min",
-    suitableFor: "All Pets",
-    petTypes: ["All Pets"],
-    suitableBreeds: "",
-    suitableAgeGroups: [],
-    minWeight: 0,
-    maxWeight: 0,
+    suitablePets: "All Pets",
     includes: [""],
-    notIncludes: [""],
-    specialOffers: {
-      limitedTimeOffer: false,
-      buyOneGetOne: false,
-      packageDiscounts: false,
-      membershipDiscounts: false,
-      couponCodes: []
-    },
-    availability: {
-      availableDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
-      availableTimeSlots: ["09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00"],
-      maxBookingsPerDay: 10,
-      homeServiceAvailable: false,
-      storeVisitAvailable: true,
-      emergencyBookingAvailable: false
-    },
-    requirementsBeforeService: [""],
-    afterServiceCareInstructions: [""],
-    cancellationPolicy: {
-      freeCancellationBeforeHours: 24,
-      cancellationCharges: 0
-    },
-    serviceStatus: "Active",
-    ratingsAnalytics: {
-      totalBookings: 0,
-      averageRating: 5,
-      reviewsCount: 0,
-      revenueGenerated: 0
-    },
-    seoSearch: {
-      keywords: [],
-      tags: [],
-      featuredService: false,
-      popularServiceBadge: false
-    }
+    homeServiceAvailable: false,
+    emergencyServiceAvailable: false,
+    active: true
   });
 
   // Load existing service if in edit mode
@@ -96,29 +52,27 @@ function ServiceForm() {
       if (foundRaw) {
         const parsed = parseService(foundRaw);
         setFormData({
-          ...parsed,
+          _id: parsed._id,
+          name: parsed.name || "",
+          category: parsed.category || "Pet Grooming",
+          photo: parsed.photo || parsed.image || "",
+          description: parsed.description || "",
           originalPrice: parsed.originalPrice || parsed.price || "",
-          offerPrice: parsed.offerPrice || parsed.price || "",
+          offerEnabled: parsed.offerEnabled || false,
+          offerType: parsed.offerType || "",
+          discountAmount: parsed.discountAmount || "",
+          offerTitle: parsed.offerTitle || "",
+          offerEndDate: parsed.offerEndDate ? new Date(parsed.offerEndDate).toISOString().split('T')[0] : "",
+          duration: parsed.duration || "60 min",
+          suitablePets: parsed.suitablePets || "All Pets",
           includes: parsed.includes?.length ? parsed.includes : [""],
-          notIncludes: parsed.notIncludes?.length ? parsed.notIncludes : [""],
-          requirementsBeforeService: parsed.requirementsBeforeService?.length ? parsed.requirementsBeforeService : [""],
-          afterServiceCareInstructions: parsed.afterServiceCareInstructions?.length ? parsed.afterServiceCareInstructions : [""],
+          homeServiceAvailable: parsed.homeServiceAvailable || false,
+          emergencyServiceAvailable: parsed.emergencyServiceAvailable || false,
+          active: parsed.active !== undefined ? parsed.active : true,
         });
       }
     }
   }, [id, isEditMode, store]);
-
-  // Auto-calculate discount percentage when original or offer price changes
-  useEffect(() => {
-    const orig = parseFloat(formData.originalPrice);
-    const offer = parseFloat(formData.offerPrice);
-    if (orig && offer && orig > offer) {
-      const disc = Math.round(((orig - offer) / orig) * 100);
-      setFormData(prev => ({ ...prev, discountPercentage: disc }));
-    } else {
-      setFormData(prev => ({ ...prev, discountPercentage: 0 }));
-    }
-  }, [formData.originalPrice, formData.offerPrice]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -126,57 +80,34 @@ function ServiceForm() {
     setFormData(prev => ({ ...prev, [name]: val }));
   };
 
-  const handleNestedChange = (section, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value
-      }
-    }));
-  };
-
-  // List field helpers (inclusions, exclusions, requirements, care instructions)
-  const handleListChange = (field, index, value) => {
+  // List field helpers (What We Offer)
+  const handleListChange = (index, value) => {
     setFormData(prev => {
-      const list = [...prev[field]];
+      const list = [...prev.includes];
       list[index] = value;
-      return { ...prev, [field]: list };
+      return { ...prev, includes: list };
     });
   };
 
-  const addListItem = (field) => {
-    setFormData(prev => ({ ...prev, [field]: [...prev[field], ""] }));
+  const addListItem = () => {
+    setFormData(prev => ({ ...prev, includes: [...prev.includes, ""] }));
   };
 
-  const removeListItem = (field, index) => {
+  const removeListItem = (index) => {
     setFormData(prev => {
-      const list = prev[field].filter((_, idx) => idx !== index);
-      return { ...prev, [field]: list.length ? list : [""] };
+      const list = prev.includes.filter((_, idx) => idx !== index);
+      return { ...prev, includes: list.length ? list : [""] };
     });
-  };
-
-  // Checkbox groups (Days, Age Groups, Pet Types)
-  const toggleCheckboxInArray = (field, item) => {
-    setFormData(prev => {
-      const list = [...prev[field]];
-      const isSelected = list.includes(item);
-      const updated = isSelected ? list.filter(i => i !== item) : [...list, item];
-      return { ...prev, [field]: updated };
-    });
-  };
-
-  const toggleAvailabilityDay = (day) => {
-    const list = [...formData.availability.availableDays];
-    const isSelected = list.includes(day);
-    const updated = isSelected ? list.filter(d => d !== day) : [...list, day];
-    handleNestedChange("availability", "availableDays", updated);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.offerPrice) {
-      alert("Please enter a service name and price.");
+    if (!formData.name) {
+      alert("Please enter a service name.");
+      return;
+    }
+    if (!formData.originalPrice) {
+      alert("Please enter the original price.");
       return;
     }
 
@@ -184,15 +115,22 @@ function ServiceForm() {
     try {
       const rawServices = store?.services || [];
       
-      // Clean lists from empty values
+      const op = Number(formData.originalPrice);
+      const oe = formData.offerEnabled;
+      const da = oe ? Number(formData.discountAmount || 0) : 0;
+      const finalPrice = oe ? Math.max(0, op - da) : op;
+
       const cleanedForm = {
         ...formData,
-        price: Number(formData.offerPrice), // sync price with offer price
+        price: finalPrice,
+        originalPrice: op,
+        offerEnabled: oe,
+        discountAmount: da,
         includes: formData.includes.filter(i => i.trim() !== ""),
-        notIncludes: formData.notIncludes.filter(i => i.trim() !== ""),
-        requirementsBeforeService: formData.requirementsBeforeService.filter(i => i.trim() !== ""),
-        afterServiceCareInstructions: formData.afterServiceCareInstructions.filter(i => i.trim() !== ""),
-        suitableFor: formData.suitableFor || "All Pets"
+        category: formData.category || "Pet Grooming",
+        photo: formData.photo || "",
+        image: formData.photo || "",
+        active: formData.active
       };
 
       const serialized = serializeService(cleanedForm);
@@ -201,7 +139,7 @@ function ServiceForm() {
       if (isEditMode) {
         updatedServices = rawServices.map(s => s._id === id ? serialized : s);
       } else {
-        updatedServices = [...rawServices, { ...serialized, _id: undefined }]; // backend creates ID
+        updatedServices = [...rawServices, { ...serialized, _id: undefined }];
       }
 
       const success = await updateStore({ services: updatedServices });
@@ -209,7 +147,8 @@ function ServiceForm() {
         navigate("/services");
       }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to save service:", err);
+      alert("An error occurred while saving the service. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -224,678 +163,624 @@ function ServiceForm() {
     "Pet Walking",
     "Pet Sitting",
     "Pet Taxi",
-    "Emergency Pet Care"
+    "Emergency Pet Care",
+    "Others"
   ];
 
-  const ageGroups = ["Puppy", "Kitten", "Adult", "Senior"];
-  const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const offerTypes = [
+    "Discount",
+    "Festival Offer",
+    "Summer Special",
+    "Winter Special",
+    "New Customer Offer",
+    "Weekend Offer"
+  ];
+
+  const suitablePetsOptions = [
+    "All Pets",
+    "Dogs Only",
+    "Cats Only",
+    "Dogs & Cats",
+    "Birds",
+    "Rabbits",
+    "Small Animals"
+  ];
+
+  // Calculated values for UI
+  const origPrice = parseFloat(formData.originalPrice) || 0;
+  const discAmount = formData.offerEnabled ? (parseFloat(formData.discountAmount) || 0) : 0;
+  const finalPrice = Math.max(0, origPrice - discAmount);
+  const discountPercent = origPrice > 0 ? Math.round((discAmount / origPrice) * 100) : 0;
+
+  const getPlaceholderImage = (category, srvName) => {
+    const name = (srvName || "").toLowerCase();
+    const cat = (category || "").toLowerCase();
+    if (name.includes("groom") || cat.includes("groom")) {
+      return "https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=600&q=80";
+    }
+    if (name.includes("vet") || cat.includes("vet") || name.includes("clinic") || name.includes("health")) {
+      return "https://images.unsplash.com/photo-1576091160550-2173dba999ef?auto=format&fit=crop&w=600&q=80";
+    }
+    if (name.includes("board") || cat.includes("board") || name.includes("stay") || name.includes("hotel")) {
+      return "https://images.unsplash.com/photo-1596492784531-6e6eb5ea9993?auto=format&fit=crop&w=600&q=80";
+    }
+    return "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=600&q=80";
+  };
+
+  const previewImage = formData.photo || getPlaceholderImage(formData.category, formData.name);
 
   return (
-    <div className="page-container animate-fade-in">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+    <div className="page-container animate-fade-in" style={{ maxWidth: 1200, margin: "0 auto" }}>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
         <Link to="/services" style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--text-secondary)", textDecoration: "none", fontWeight: 600, fontSize: 14 }}>
           <ArrowLeft size={16} />
-          Back to List
+          Back to Services
         </Link>
-        <h1>{isEditMode ? "Edit Service details" : "Create New Service"}</h1>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>
+          {isEditMode ? "Modify Service Details" : "Create New Service"}
+        </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="service-form-layout">
+      {/* Grid Layout */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 32, alignItems: "start" }}>
         
-        {/* Horizontal tabs */}
-        <div className="tabs-container" style={{ marginBottom: 24 }}>
-          <div className="tabs">
-            {[
-              { id: "basic", label: "Basic Info & Media" },
-              { id: "pricing", label: "Pricing & Details" },
-              { id: "inclusions", label: "Inclusions & Care" },
-              { id: "availability", label: "Availability & Offers" },
-              { id: "seo", label: "SEO & Search Optimization" }
-            ].map(t => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setActiveTab(t.id)}
-                className={`tab ${activeTab === t.id ? "active" : ""}`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Form Column */}
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          
+          {/* Card 1: Core Details */}
+          <div className="section-panel" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 16, fontWeight: 700, borderBottom: "1px solid var(--border-color)", paddingBottom: 12, color: "#fff", display: "flex", alignItems: "center", gap: 8 }}>
+              <Sparkles size={18} style={{ color: "var(--primary)" }} />
+              1. General Details
+            </h3>
 
-        {/* Tab contents */}
-        <div className="section-panel" style={{ padding: 32, minHeight: 450 }}>
+            <div className="form-group">
+              <label className="form-label" style={{ fontWeight: 600 }}>Service Name *</label>
+              <input
+                type="text"
+                name="name"
+                className="input-field"
+                placeholder="e.g., Premium Dog Spa & Styling"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
 
-          {/* TAB 1: BASIC INFO */}
-          {activeTab === "basic" && (
-            <div className="animate-fade-in" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 24 }}>
-                <div className="form-group">
-                  <label className="form-label">Service Name*</label>
-                  <input
-                    type="text"
-                    name="name"
-                    className="input-field"
-                    placeholder="e.g. Premium Dog Grooming Package"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Service Category*</label>
-                  <select
-                    name="category"
-                    className="input-field"
-                    style={{ background: "var(--bg-tertiary)", color: "#fff" }}
-                    value={formData.category}
-                    onChange={handleInputChange}
-                  >
-                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Category *</label>
+                <select
+                  name="category"
+                  className="input-field"
+                  style={{ background: "var(--bg-tertiary)", color: "#fff" }}
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  required
+                >
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Short Description*</label>
+                <label className="form-label" style={{ fontWeight: 600 }}>Duration</label>
                 <input
                   type="text"
-                  name="shortDescription"
+                  name="duration"
                   className="input-field"
-                  placeholder="Short 1-sentence tagline describing the service."
-                  value={formData.shortDescription}
+                  placeholder="e.g., 60 min"
+                  value={formData.duration}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 20 }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Service Image URL *</label>
+                <input
+                  type="url"
+                  name="photo"
+                  className="input-field"
+                  placeholder="https://images.unsplash.com/..."
+                  value={formData.photo}
                   onChange={handleInputChange}
                   required
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label">Service Description</label>
-                <textarea
-                  name="description"
+                <label className="form-label" style={{ fontWeight: 600 }}>Suitable Pets</label>
+                <select
+                  name="suitablePets"
                   className="input-field"
-                  style={{ minHeight: 120, resize: "vertical" }}
-                  placeholder="Full detailed description outlining the service features."
-                  value={formData.description}
+                  style={{ background: "var(--bg-tertiary)", color: "#fff" }}
+                  value={formData.suitablePets}
                   onChange={handleInputChange}
-                />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 24 }}>
-                <div className="form-group">
-                  <label className="form-label">Featured Image URL</label>
-                  <input
-                    type="url"
-                    name="photo"
-                    className="input-field"
-                    placeholder="https://images.unsplash.com/..."
-                    value={formData.photo}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Service Status</label>
-                  <select
-                    name="serviceStatus"
-                    className="input-field"
-                    style={{ background: "var(--bg-tertiary)", color: "#fff" }}
-                    value={formData.serviceStatus}
-                    onChange={handleInputChange}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                    <option value="Temporarily Unavailable">Temporarily Unavailable</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Service Video Presentation URL (Optional)</label>
-                <input
-                  type="url"
-                  name="video"
-                  className="input-field"
-                  placeholder="https://youtube.com/watch?v=..."
-                  value={formData.video}
-                  onChange={handleInputChange}
-                />
+                >
+                  {suitablePetsOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
               </div>
             </div>
-          )}
 
-          {/* TAB 2: PRICING & DETAILS */}
-          {activeTab === "pricing" && (
-            <div className="animate-fade-in" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, borderBottom: "1px solid var(--border-color)", paddingBottom: 8 }}>Pricing Breakdown</h3>
-              
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
-                <div className="form-group">
-                  <label className="form-label">Original Price (₹)*</label>
+            <div className="form-group">
+              <label className="form-label" style={{ fontWeight: 600 }}>Description *</label>
+              <textarea
+                name="description"
+                className="input-field"
+                style={{ minHeight: 100, resize: "vertical", lineHeight: 1.6 }}
+                placeholder="Describe what this service entails and any important details for pet parents..."
+                value={formData.description}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+          </div>
+
+          {/* Card 2: Pricing & Offers */}
+          <div className="section-panel" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 16, fontWeight: 700, borderBottom: "1px solid var(--border-color)", paddingBottom: 12, color: "#fff", display: "flex", alignItems: "center", gap: 8 }}>
+              <Percent size={18} style={{ color: "var(--primary)" }} />
+              2. Pricing & Promotional Offers
+            </h3>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1.2fr", gap: 20, alignItems: "center" }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Original Price *</label>
+                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <span style={{ position: "absolute", left: 16, color: "var(--text-secondary)", fontWeight: 700 }}>₹</span>
                   <input
                     type="number"
                     name="originalPrice"
                     className="input-field"
-                    placeholder="899"
+                    style={{ paddingLeft: 32 }}
+                    placeholder="500"
                     value={formData.originalPrice}
                     onChange={handleInputChange}
                     required
                   />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Offer Price (₹)*</label>
-                  <input
-                    type="number"
-                    name="offerPrice"
-                    className="input-field"
-                    placeholder="699"
-                    value={formData.offerPrice}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Discount (%)</label>
-                  <input
-                    type="text"
-                    className="input-field"
-                    value={`${formData.discountPercentage}%`}
-                    disabled
-                    style={{ opacity: 0.6 }}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Tax Included?</label>
-                  <select
-                    name="taxIncluded"
-                    className="input-field"
-                    style={{ background: "var(--bg-tertiary)", color: "#fff" }}
-                    value={formData.taxIncluded ? "true" : "false"}
-                    onChange={(e) => setFormData(prev => ({ ...prev, taxIncluded: e.target.value === "true" }))}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label" style={{ fontWeight: 600 }}>Offer Enabled</label>
+                <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, offerEnabled: true }))}
+                    style={{
+                      flex: 1,
+                      padding: "10px 16px",
+                      borderRadius: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      border: formData.offerEnabled ? "1px solid var(--primary)" : "1px solid var(--border-color)",
+                      backgroundColor: formData.offerEnabled ? "var(--primary-light)" : "var(--bg-tertiary)",
+                      color: formData.offerEnabled ? "var(--primary)" : "var(--text-secondary)",
+                      transition: "all 0.2s ease"
+                    }}
                   >
-                    <option value="true">Yes, Tax Included</option>
-                    <option value="false">No, Plus Taxes</option>
-                  </select>
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, offerEnabled: false }))}
+                    style={{
+                      flex: 1,
+                      padding: "10px 16px",
+                      borderRadius: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      border: !formData.offerEnabled ? "1px solid var(--border-color)" : "1px solid var(--border-color)",
+                      backgroundColor: !formData.offerEnabled ? "rgba(239, 68, 68, 0.15)" : "var(--bg-tertiary)",
+                      color: !formData.offerEnabled ? "#ef4444" : "var(--text-secondary)",
+                      transition: "all 0.2s ease"
+                    }}
+                  >
+                    No
+                  </button>
                 </div>
               </div>
+            </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
-                <div className="form-group">
-                  <label className="form-label">Home Visit Charges (₹)</label>
-                  <input
-                    type="number"
-                    name="homeVisitCharges"
-                    className="input-field"
-                    value={formData.homeVisitCharges}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Emergency Charges (₹)</label>
-                  <input
-                    type="number"
-                    name="emergencyCharges"
-                    className="input-field"
-                    value={formData.emergencyCharges}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Weekend Surcharge (₹)</label>
-                  <input
-                    type="number"
-                    name="weekendCharges"
-                    className="input-field"
-                    value={formData.weekendCharges}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Festival Surcharge (₹)</label>
-                  <input
-                    type="number"
-                    name="festivalCharges"
-                    className="input-field"
-                    value={formData.festivalCharges}
-                    onChange={handleInputChange}
-                  />
-                </div>
-              </div>
+            {formData.offerEnabled && (
+              <div className="animate-fade-in" style={{ display: "flex", flexDirection: "column", gap: 20, backgroundColor: "rgba(255,255,255,0.02)", padding: 20, borderRadius: 16, border: "1px dashed var(--border-color)" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontWeight: 600 }}>Offer Type *</label>
+                    <select
+                      name="offerType"
+                      className="input-field"
+                      style={{ background: "var(--bg-tertiary)", color: "#fff" }}
+                      value={formData.offerType}
+                      onChange={handleInputChange}
+                      required={formData.offerEnabled}
+                    >
+                      <option value="">Select type...</option>
+                      {offerTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
 
-              <h3 style={{ fontSize: 15, fontWeight: 700, borderBottom: "1px solid var(--border-color)", paddingBottom: 8, marginTop: 12 }}>Service Suitability Details</h3>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 24 }}>
-                <div className="form-group">
-                  <label className="form-label">Suitable Pet Types</label>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
-                    {["Dogs", "Cats", "Birds", "Rabbits", "All Pets"].map(pt => {
-                      const isSelected = formData.petTypes.includes(pt);
-                      return (
-                        <button
-                          key={pt}
-                          type="button"
-                          onClick={() => toggleCheckboxInArray("petTypes", pt)}
-                          style={{
-                            backgroundColor: isSelected ? "var(--primary-light)" : "var(--bg-tertiary)",
-                            color: isSelected ? "var(--primary)" : "var(--text-secondary)",
-                            border: isSelected ? "1px solid var(--primary)" : "1px solid var(--border-color)",
-                            borderRadius: 16,
-                            padding: "6px 14px",
-                            fontSize: 12,
-                            fontWeight: 600,
-                            cursor: "pointer"
-                          }}
-                        >
-                          {pt}
-                        </button>
-                      );
-                    })}
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontWeight: 600 }}>Discount Amount *</label>
+                    <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                      <span style={{ position: "absolute", left: 16, color: "var(--text-secondary)", fontWeight: 700 }}>₹</span>
+                      <input
+                        type="number"
+                        name="discountAmount"
+                        className="input-field"
+                        style={{ paddingLeft: 32 }}
+                        placeholder="100"
+                        value={formData.discountAmount}
+                        onChange={handleInputChange}
+                        required={formData.offerEnabled}
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Suitable Age Groups</label>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
-                    {ageGroups.map(ag => {
-                      const isSelected = formData.suitableAgeGroups.includes(ag);
-                      return (
-                        <button
-                          key={ag}
-                          type="button"
-                          onClick={() => toggleCheckboxInArray("suitableAgeGroups", ag)}
-                          style={{
-                            backgroundColor: isSelected ? "var(--primary-light)" : "var(--bg-tertiary)",
-                            color: isSelected ? "var(--primary)" : "var(--text-secondary)",
-                            border: isSelected ? "1px solid var(--primary)" : "1px solid var(--border-color)",
-                            borderRadius: 16,
-                            padding: "6px 14px",
-                            fontSize: 12,
-                            fontWeight: 600,
-                            cursor: "pointer"
-                          }}
-                        >
-                          {ag}
-                        </button>
-                      );
-                    })}
+
+                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 20 }}>
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontWeight: 600 }}>Offer Title *</label>
+                    <input
+                      type="text"
+                      name="offerTitle"
+                      className="input-field"
+                      placeholder="e.g., Festival Special"
+                      value={formData.offerTitle}
+                      onChange={handleInputChange}
+                      required={formData.offerEnabled}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" style={{ fontWeight: 600 }}>Offer End Date (Optional)</label>
+                    <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                      <input
+                        type="date"
+                        name="offerEndDate"
+                        className="input-field"
+                        style={{ color: "#fff" }}
+                        value={formData.offerEndDate}
+                        onChange={handleInputChange}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-                <div className="form-group">
-                  <label className="form-label">Service Duration (e.g. 60 min)</label>
+                {/* Final Calculation Summary */}
+                {origPrice > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(16, 185, 129, 0.08)", padding: "12px 18px", borderRadius: 12, border: "1px solid rgba(16, 185, 129, 0.2)" }}>
+                    <span style={{ fontSize: 13, color: "var(--text-secondary)", fontWeight: 600 }}>Calculated Client Price:</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 14, color: "var(--text-tertiary)", textDecoration: "line-through" }}>₹{origPrice}</span>
+                      <span style={{ fontSize: 18, color: "#10b981", fontWeight: 900 }}>₹{finalPrice}</span>
+                      <span style={{ fontSize: 11, background: "rgba(16, 185, 129, 0.15)", color: "#10b981", padding: "2px 6px", borderRadius: 6, fontWeight: 700 }}>
+                        {discountPercent}% Off
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Card 3: What We Offer (Inclusions) */}
+          <div className="section-panel" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 16, fontWeight: 700, borderBottom: "1px solid var(--border-color)", paddingBottom: 12, color: "#fff", display: "flex", alignItems: "center", gap: 8 }}>
+              <Check size={18} style={{ color: "var(--primary)" }} />
+              3. What We Offer (Inclusions)
+            </h3>
+            
+            <p style={{ margin: "-8px 0 4px 0", fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+              List the specific features or items included in this service package (e.g. shampoo, brush, nail trim).
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {formData.includes.map((item, idx) => (
+                <div key={idx} style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <span style={{ color: "var(--primary)", fontWeight: 700, fontSize: 14 }}>{idx + 1}.</span>
                   <input
                     type="text"
-                    name="duration"
                     className="input-field"
-                    value={formData.duration}
-                    onChange={handleInputChange}
+                    placeholder="e.g., Warm water bathing & blow-dry"
+                    value={item}
+                    onChange={(e) => handleListChange(idx, e.target.value)}
                   />
+                  <button 
+                    type="button" 
+                    className="btn-icon btn-icon-danger" 
+                    style={{ height: 48, width: 48, flexShrink: 0 }} 
+                    onClick={() => removeListItem(idx)}
+                    disabled={formData.includes.length === 1}
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Min Weight Allowed (kg)</label>
-                  <input
-                    type="number"
-                    name="minWeight"
-                    className="input-field"
-                    value={formData.minWeight}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Max Weight Allowed (kg)</label>
-                  <input
-                    type="number"
-                    name="maxWeight"
-                    className="input-field"
-                    value={formData.maxWeight}
-                    onChange={handleInputChange}
-                  />
+              ))}
+            </div>
+
+            <button 
+              type="button" 
+              className="btn-secondary" 
+              style={{ width: "auto", alignSelf: "flex-start", padding: "8px 18px", fontSize: 12 }} 
+              onClick={addListItem}
+            >
+              <Plus size={14} style={{ marginRight: 6 }} />
+              Add Inclusion Item
+            </button>
+          </div>
+
+          {/* Card 4: Service Options & Status */}
+          <div className="section-panel" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>
+            <h3 style={{ margin: "0 0 8px 0", fontSize: 16, fontWeight: 700, borderBottom: "1px solid var(--border-color)", paddingBottom: 12, color: "#fff", display: "flex", alignItems: "center", gap: 8 }}>
+              <Home size={18} style={{ color: "var(--primary)" }} />
+              4. Service Availability & Status
+            </h3>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+              {/* Home Service Available */}
+              <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <label className="form-label" style={{ fontWeight: 600, fontSize: 13 }}>Home Service?</label>
+                <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", border: "1px solid var(--border-color)" }}>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(p => ({ ...p, homeServiceAvailable: true }))}
+                    style={{
+                      flex: 1,
+                      padding: "8px 12px",
+                      border: "none",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      backgroundColor: formData.homeServiceAvailable ? "var(--primary-light)" : "var(--bg-tertiary)",
+                      color: formData.homeServiceAvailable ? "var(--primary)" : "var(--text-secondary)"
+                    }}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(p => ({ ...p, homeServiceAvailable: false }))}
+                    style={{
+                      flex: 1,
+                      padding: "8px 12px",
+                      border: "none",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      backgroundColor: !formData.homeServiceAvailable ? "var(--bg-secondary)" : "var(--bg-tertiary)",
+                      color: !formData.homeServiceAvailable ? "var(--text-secondary)" : "var(--text-tertiary)"
+                    }}
+                  >
+                    No
+                  </button>
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Suitable Breeds (e.g. German Shepherd, Persian Cat)</label>
-                <input
-                  type="text"
-                  name="suitableBreeds"
-                  className="input-field"
-                  placeholder="Leave blank for all breeds"
-                  value={formData.suitableBreeds}
-                  onChange={handleInputChange}
-                />
+              {/* Emergency Service Available */}
+              <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <label className="form-label" style={{ fontWeight: 600, fontSize: 13 }}>Emergency Service?</label>
+                <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", border: "1px solid var(--border-color)" }}>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(p => ({ ...p, emergencyServiceAvailable: true }))}
+                    style={{
+                      flex: 1,
+                      padding: "8px 12px",
+                      border: "none",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      backgroundColor: formData.emergencyServiceAvailable ? "var(--primary-light)" : "var(--bg-tertiary)",
+                      color: formData.emergencyServiceAvailable ? "var(--primary)" : "var(--text-secondary)"
+                    }}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(p => ({ ...p, emergencyServiceAvailable: false }))}
+                    style={{
+                      flex: 1,
+                      padding: "8px 12px",
+                      border: "none",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      backgroundColor: !formData.emergencyServiceAvailable ? "var(--bg-secondary)" : "var(--bg-tertiary)",
+                      color: !formData.emergencyServiceAvailable ? "var(--text-secondary)" : "var(--text-tertiary)"
+                    }}
+                  >
+                    No
+                  </button>
+                </div>
+              </div>
+
+              {/* Active Status */}
+              <div className="form-group" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <label className="form-label" style={{ fontWeight: 600, fontSize: 13 }}>Active Status</label>
+                <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", border: "1px solid var(--border-color)" }}>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(p => ({ ...p, active: true }))}
+                    style={{
+                      flex: 1,
+                      padding: "8px 12px",
+                      border: "none",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      backgroundColor: formData.active ? "var(--success-light)" : "var(--bg-tertiary)",
+                      color: formData.active ? "var(--success)" : "var(--text-secondary)"
+                    }}
+                  >
+                    Active
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(p => ({ ...p, active: false }))}
+                    style={{
+                      flex: 1,
+                      padding: "8px 12px",
+                      border: "none",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      backgroundColor: !formData.active ? "rgba(239, 68, 68, 0.15)" : "var(--bg-tertiary)",
+                      color: !formData.active ? "#ef4444" : "var(--text-secondary)"
+                    }}
+                  >
+                    Inactive
+                  </button>
+                </div>
               </div>
             </div>
-          )}
+          </div>
 
-          {/* TAB 3: INCLUSIONS & CARE */}
-          {activeTab === "inclusions" && (
-            <div className="animate-fade-in" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          {/* Action Bar */}
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 14, marginTop: 8 }}>
+            <Link to="/services" className="btn-secondary" style={{ width: "auto", margin: 0, padding: "12px 28px" }}>
+              Cancel
+            </Link>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={loading}
+              style={{ width: "auto", margin: 0, padding: "12px 28px", display: "flex", alignItems: "center", gap: 8 }}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin" size={18} />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={18} />
+                  {isEditMode ? "Save Service" : "Add Service"}
+                </>
+              )}
+            </button>
+          </div>
+
+        </form>
+
+        {/* Live Preview Column */}
+        <div style={{ position: "sticky", top: 24, display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={{ padding: 12, background: "rgba(255, 107, 53, 0.08)", border: "1px solid var(--primary-light)", borderRadius: 12, display: "flex", alignItems: "center", gap: 10 }}>
+            <Sparkles size={18} style={{ color: "var(--primary)" }} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--primary)" }}>Live Client App Preview</span>
+          </div>
+
+          <div className="service-card" style={{ width: "100%", margin: 0, overflow: "hidden" }}>
+            <div className="service-card-image" style={{ height: 200, position: "relative" }}>
+              <img 
+                src={previewImage} 
+                alt="Service Preview" 
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                onError={(e) => {
+                  e.target.src = "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&w=600&q=80";
+                }}
+              />
               
-              {/* Inclusions & Exclusions */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-                {/* Includes */}
-                <div>
-                  <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "var(--success)" }}>What's Included</h4>
-                  {formData.includes.map((item, idx) => (
-                    <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                      <input
-                        type="text"
-                        className="input-field"
-                        placeholder="✓ Bathing & Blowdry"
-                        value={item}
-                        onChange={(e) => handleListChange("includes", idx, e.target.value)}
-                      />
-                      <button type="button" className="btn-icon btn-icon-danger" style={{ height: 48, width: 48 }} onClick={() => removeListItem("includes", idx)}>
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
-                  <button type="button" className="btn-secondary" style={{ padding: "8px 16px", fontSize: 12, marginTop: 4, width: "auto" }} onClick={() => addListItem("includes")}>
-                    + Add Included Item
-                  </button>
-                </div>
-
-                {/* Excludes */}
-                <div>
-                  <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "var(--danger)" }}>What's Not Included</h4>
-                  {formData.notIncludes.map((item, idx) => (
-                    <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                      <input
-                        type="text"
-                        className="input-field"
-                        placeholder="✗ Vet Consultation"
-                        value={item}
-                        onChange={(e) => handleListChange("notIncludes", idx, e.target.value)}
-                      />
-                      <button type="button" className="btn-icon btn-icon-danger" style={{ height: 48, width: 48 }} onClick={() => removeListItem("notIncludes", idx)}>
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
-                  <button type="button" className="btn-secondary" style={{ padding: "8px 16px", fontSize: 12, marginTop: 4, width: "auto" }} onClick={() => addListItem("notIncludes")}>
-                    + Add Excluded Item
-                  </button>
-                </div>
+              {formData.offerEnabled && discountPercent > 0 && (
+                <span className="service-discount-badge" style={{ backgroundColor: "#10b981", color: "#fff" }}>
+                  {discountPercent}% OFF
+                </span>
+              )}
+              
+              <div className="service-status-floating">
+                <span className={`badge ${formData.active ? "badge-confirmed" : "badge-cancelled"}`} style={{ fontSize: "10px" }}>
+                  {formData.active ? "Active" : "Inactive"}
+                </span>
               </div>
-
-              {/* Requirements & Care instructions */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, borderTop: "1px solid var(--border-color)", paddingTop: 20 }}>
-                {/* Requirements */}
-                <div>
-                  <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>Requirements Before Service</h4>
-                  {formData.requirementsBeforeService.map((item, idx) => (
-                    <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                      <input
-                        type="text"
-                        className="input-field"
-                        placeholder="e.g. Pet must be fully vaccinated"
-                        value={item}
-                        onChange={(e) => handleListChange("requirementsBeforeService", idx, e.target.value)}
-                      />
-                      <button type="button" className="btn-icon btn-icon-danger" style={{ height: 48, width: 48 }} onClick={() => removeListItem("requirementsBeforeService", idx)}>
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
-                  <button type="button" className="btn-secondary" style={{ padding: "8px 16px", fontSize: 12, marginTop: 4, width: "auto" }} onClick={() => addListItem("requirementsBeforeService")}>
-                    + Add Requirement
-                  </button>
-                </div>
-
-                {/* Care instructions */}
-                <div>
-                  <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12 }}>After Service Care Instructions</h4>
-                  {formData.afterServiceCareInstructions.map((item, idx) => (
-                    <div key={idx} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                      <input
-                        type="text"
-                        className="input-field"
-                        placeholder="e.g. Avoid bath for 24 hours"
-                        value={item}
-                        onChange={(e) => handleListChange("afterServiceCareInstructions", idx, e.target.value)}
-                      />
-                      <button type="button" className="btn-icon btn-icon-danger" style={{ height: 48, width: 48 }} onClick={() => removeListItem("afterServiceCareInstructions", idx)}>
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
-                  <button type="button" className="btn-secondary" style={{ padding: "8px 16px", fontSize: 12, marginTop: 4, width: "auto" }} onClick={() => addListItem("afterServiceCareInstructions")}>
-                    + Add Instruction
-                  </button>
-                </div>
-              </div>
-
             </div>
-          )}
 
-          {/* TAB 4: AVAILABILITY & OFFERS */}
-          {activeTab === "availability" && (
-            <div className="animate-fade-in" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, borderBottom: "1px solid var(--border-color)", paddingBottom: 8 }}>Service Modes & Booking Volume</h3>
-              
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-                <div className="form-group">
-                  <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <input
-                      type="checkbox"
-                      checked={formData.availability.storeVisitAvailable}
-                      onChange={(e) => handleNestedChange("availability", "storeVisitAvailable", e.target.checked)}
-                    />
-                    Store Visit Available
-                  </label>
-                </div>
-                <div className="form-group">
-                  <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <input
-                      type="checkbox"
-                      checked={formData.availability.homeServiceAvailable}
-                      onChange={(e) => handleNestedChange("availability", "homeServiceAvailable", e.target.checked)}
-                    />
-                    Home Service Available
-                  </label>
-                </div>
-                <div className="form-group">
-                  <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <input
-                      type="checkbox"
-                      checked={formData.availability.emergencyBookingAvailable}
-                      onChange={(e) => handleNestedChange("availability", "emergencyBookingAvailable", e.target.checked)}
-                    />
-                    Emergency Booking Available
-                  </label>
+            <div className="service-card-body" style={{ padding: 24 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <span className="service-card-category" style={{ fontSize: 11, textTransform: "uppercase", fontWeight: 700, color: "var(--primary)" }}>
+                  {formData.category || "General Pet Care"}
+                </span>
+                
+                {/* Service Mode Badges */}
+                <div style={{ display: "flex", gap: 4 }}>
+                  {formData.homeServiceAvailable && (
+                    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "50%", background: "var(--primary-light)", color: "var(--primary)", fontSize: 10 }} title="Home Service Available">
+                      H
+                    </span>
+                  )}
+                  {formData.emergencyServiceAvailable && (
+                    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "50%", background: "rgba(239, 68, 68, 0.15)", color: "#ef4444", fontSize: 10 }} title="Emergency Service Available">
+                      E
+                    </span>
+                  )}
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-                <div className="form-group">
-                  <label className="form-label">Available Days</label>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
-                    {daysOfWeek.map(day => {
-                      const isSelected = formData.availability.availableDays.includes(day);
-                      return (
-                        <button
-                          key={day}
-                          type="button"
-                          onClick={() => toggleAvailabilityDay(day)}
-                          style={{
-                            backgroundColor: isSelected ? "var(--primary-light)" : "var(--bg-tertiary)",
-                            color: isSelected ? "var(--primary)" : "var(--text-secondary)",
-                            border: isSelected ? "1px solid var(--primary)" : "1px solid var(--border-color)",
-                            borderRadius: 16,
-                            padding: "6px 12px",
-                            fontSize: 11,
-                            fontWeight: 600,
-                            cursor: "pointer"
-                          }}
-                        >
-                          {day}
-                        </button>
-                      );
-                    })}
+              <h3 className="service-card-title" style={{ fontSize: 18, fontWeight: 800, margin: "0 0 10px 0", color: "#fff" }}>
+                {formData.name || "Service Name Placeholder"}
+              </h3>
+
+              <p className="service-card-desc" style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5, margin: "0 0 16px 0", minHeight: 40 }}>
+                {formData.description || "Enter a description on the left to see it update here in real-time."}
+              </p>
+
+              <div className="service-card-meta" style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--text-tertiary)", borderTop: "1px solid var(--border-color)", borderBottom: "1px solid var(--border-color)", padding: "10px 0", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <Clock size={14} />
+                  <span>{formData.duration || "60 min"}</span>
+                </div>
+                <div>
+                  Suitable: <strong style={{ color: "#fff" }}>{formData.suitablePets || "All Pets"}</strong>
+                </div>
+              </div>
+
+              {/* Inclusions Brief List */}
+              {formData.includes.filter(i => i.trim() !== "").length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-tertiary)", display: "block", marginBottom: 6, textTransform: "uppercase" }}>
+                    What's Included:
+                  </span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {formData.includes.filter(i => i.trim() !== "").slice(0, 3).map((item, idx) => (
+                      <div key={idx} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-secondary)" }}>
+                        <span style={{ color: "#10b981" }}>✓</span>
+                        <span style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{item}</span>
+                      </div>
+                    ))}
+                    {formData.includes.filter(i => i.trim() !== "").length > 3 && (
+                      <span style={{ fontSize: 11, color: "var(--text-tertiary)", fontStyle: "italic", marginLeft: 12 }}>
+                        + {formData.includes.filter(i => i.trim() !== "").length - 3} more items
+                      </span>
+                    )}
                   </div>
                 </div>
+              )}
 
-                <div className="form-group">
-                  <label className="form-label">Max Bookings Per Day</label>
-                  <input
-                    type="number"
-                    className="input-field"
-                    value={formData.availability.maxBookingsPerDay}
-                    onChange={(e) => handleNestedChange("availability", "maxBookingsPerDay", Number(e.target.value))}
-                  />
+              {/* Pricing Section */}
+              <div className="service-card-pricing" style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", borderTop: "1px solid var(--border-color)", paddingTop: 14 }}>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                  <span className="price-offer" style={{ fontSize: 24, fontWeight: 900, color: "#fff" }}>
+                    ₹{finalPrice}
+                  </span>
+                  {formData.offerEnabled && discountPercent > 0 && (
+                    <span className="price-original" style={{ fontSize: 14, color: "var(--text-tertiary)", textDecoration: "line-through" }}>
+                      ₹{origPrice}
+                    </span>
+                  )}
                 </div>
-              </div>
-
-              <h3 style={{ fontSize: 15, fontWeight: 700, borderBottom: "1px solid var(--border-color)", paddingBottom: 8, marginTop: 12 }}>Cancellation Policy</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-                <div className="form-group">
-                  <label className="form-label">Free Cancellation Before (Hours)</label>
-                  <input
-                    type="number"
-                    className="input-field"
-                    value={formData.cancellationPolicy.freeCancellationBeforeHours}
-                    onChange={(e) => handleNestedChange("cancellationPolicy", "freeCancellationBeforeHours", Number(e.target.value))}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Late Cancellation Fee (₹)</label>
-                  <input
-                    type="number"
-                    className="input-field"
-                    value={formData.cancellationPolicy.cancellationCharges}
-                    onChange={(e) => handleNestedChange("cancellationPolicy", "cancellationCharges", Number(e.target.value))}
-                  />
-                </div>
-              </div>
-
-              <h3 style={{ fontSize: 15, fontWeight: 700, borderBottom: "1px solid var(--border-color)", paddingBottom: 8, marginTop: 12 }}>Special Promotional Campaigns</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
-                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8, margin: 0 }}>
-                  <input
-                    type="checkbox"
-                    checked={formData.specialOffers.limitedTimeOffer}
-                    onChange={(e) => handleNestedChange("specialOffers", "limitedTimeOffer", e.target.checked)}
-                  />
-                  Limited Time Offer
-                </label>
-                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8, margin: 0 }}>
-                  <input
-                    type="checkbox"
-                    checked={formData.specialOffers.buyOneGetOne}
-                    onChange={(e) => handleNestedChange("specialOffers", "buyOneGetOne", e.target.checked)}
-                  />
-                  Buy One Get One (BOGO)
-                </label>
-                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8, margin: 0 }}>
-                  <input
-                    type="checkbox"
-                    checked={formData.specialOffers.packageDiscounts}
-                    onChange={(e) => handleNestedChange("specialOffers", "packageDiscounts", e.target.checked)}
-                  />
-                  Package Discounts
-                </label>
-                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8, margin: 0 }}>
-                  <input
-                    type="checkbox"
-                    checked={formData.specialOffers.membershipDiscounts}
-                    onChange={(e) => handleNestedChange("specialOffers", "membershipDiscounts", e.target.checked)}
-                  />
-                  Membership Discounts
-                </label>
+                {formData.offerEnabled && formData.offerTitle && (
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#10b981", background: "rgba(16, 185, 129, 0.12)", padding: "2px 8px", borderRadius: 8 }}>
+                    {formData.offerTitle}
+                  </span>
+                )}
               </div>
             </div>
-          )}
-
-          {/* TAB 5: SEO & SEARCH */}
-          {activeTab === "seo" && (
-            <div className="animate-fade-in" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, borderBottom: "1px solid var(--border-color)", paddingBottom: 8 }}>SEO and Discoverability</h3>
-              
-              <div className="form-group">
-                <label className="form-label">Search Keywords (comma-separated)</label>
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="grooming, dog wash, haircut, premium care"
-                  value={formData.seoSearch.keywords.join(", ")}
-                  onChange={(e) => {
-                    const keys = e.target.value.split(",").map(k => k.trim()).filter(k => k !== "");
-                    handleNestedChange("seoSearch", "keywords", keys);
-                  }}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Listing tags (comma-separated)</label>
-                <input
-                  type="text"
-                  className="input-field"
-                  placeholder="Popular, Best Seller, New"
-                  value={formData.seoSearch.tags.join(", ")}
-                  onChange={(e) => {
-                    const tags = e.target.value.split(",").map(t => t.trim()).filter(t => t !== "");
-                    handleNestedChange("seoSearch", "tags", tags);
-                  }}
-                />
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginTop: 12 }}>
-                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input
-                    type="checkbox"
-                    checked={formData.seoSearch.featuredService}
-                    onChange={(e) => handleNestedChange("seoSearch", "featuredService", e.target.checked)}
-                  />
-                  Feature this Service (Display at top of client listings)
-                </label>
-                <label className="form-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <input
-                    type="checkbox"
-                    checked={formData.seoSearch.popularServiceBadge}
-                    onChange={(e) => handleNestedChange("seoSearch", "popularServiceBadge", e.target.checked)}
-                  />
-                  Enable Popular Service Badge (Display trending flame tag)
-                </label>
-              </div>
-
-              <div style={{ background: "rgba(255, 107, 53, 0.08)", padding: 16, borderRadius: 12, border: "1px solid var(--primary-light)", marginTop: 24, display: "flex", gap: 12 }}>
-                <Info size={20} style={{ color: "var(--primary)", flexShrink: 0, marginTop: 2 }} />
-                <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
-                  Configuring rich search tags and featured highlights significantly increases your store's click-through rates and booking conversions on the PawConnect client app.
-                </p>
-              </div>
-            </div>
-          )}
-
+          </div>
         </div>
 
-        {/* Submit action bar */}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 14, marginTop: 20 }}>
-          <Link to="/services" className="btn-secondary" style={{ width: "auto", margin: 0, padding: "12px 28px" }}>
-            Discard Changes
-          </Link>
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={loading}
-            style={{ width: "auto", margin: 0, padding: "12px 28px", display: "flex", alignItems: "center", gap: 8 }}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="animate-spin" size={18} />
-                Saving Changes...
-              </>
-            ) : (
-              <>
-                <Save size={18} />
-                {isEditMode ? "Save Service Changes" : "Publish Service"}
-              </>
-            )}
-          </button>
-        </div>
-
-      </form>
+      </div>
     </div>
   );
 }
