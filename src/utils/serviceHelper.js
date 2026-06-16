@@ -1,49 +1,10 @@
-const KEY_MAP = {
-  category: "c",
-  originalPrice: "op",
-  offerEnabled: "oe",
-  offerType: "ot",
-  discountAmount: "da",
-  offerTitle: "ti",
-  offerEndDate: "ed",
-  suitablePets: "sp",
-  homeServiceAvailable: "hs",
-  emergencyServiceAvailable: "es",
-  includes: "in"
-};
-
-const REVERSE_KEY_MAP = Object.fromEntries(
-  Object.entries(KEY_MAP).map(([k, v]) => [v, k])
-);
-
-const DEFAULTS = {
-  category: "",
-  originalPrice: 0,
-  offerEnabled: false,
-  offerType: "",
-  discountAmount: 0,
-  offerTitle: "",
-  offerEndDate: "",
-  duration: "60 min",
-  suitablePets: "All Pets",
-  includes: [],
-  homeServiceAvailable: false,
-  emergencyServiceAvailable: false,
-  active: true
-};
-
-function isDefault(key, val) {
-  const defaultVal = DEFAULTS[key];
-  if (defaultVal === undefined) return false;
-  return JSON.stringify(val) === JSON.stringify(defaultVal);
-}
-
 export function parseService(srv) {
   if (!srv) return null;
   
   let description = srv.description || "";
   let metadata = {};
   
+  // Unpack any legacy metadata format if it exists
   while (description.startsWith("[SERVICE_METADATA:")) {
     let bracketCount = 0;
     let j = 0;
@@ -59,9 +20,21 @@ export function parseService(srv) {
             const jsonStr = description.slice(18, j);
             const parsedMeta = JSON.parse(jsonStr);
             
-            // Unpack: support both short-key (compressed) and long-key (legacy) metadata formats
+            const KEY_MAP_REVERSE = {
+              c: "category",
+              op: "price",
+              oe: "offerEnabled",
+              ot: "offerType",
+              da: "discountAmount",
+              ti: "offerTitle",
+              sp: "suitablePets",
+              hs: "homeServiceAvailable",
+              es: "emergencyAvailable",
+              in: "includes"
+            };
+
             for (const [k, v] of Object.entries(parsedMeta)) {
-              const longKey = REVERSE_KEY_MAP[k];
+              const longKey = KEY_MAP_REVERSE[k];
               if (longKey) {
                 metadata[longKey] = v;
               } else {
@@ -71,7 +44,7 @@ export function parseService(srv) {
             description = description.slice(j + 1);
             foundEnd = true;
           } catch (e) {
-            console.error("Failed to parse service metadata", e);
+            console.error("Failed to parse legacy metadata", e);
           }
           break;
         }
@@ -84,49 +57,36 @@ export function parseService(srv) {
     }
   }
 
-  // Calculate default price
-  const op = srv.originalPrice !== undefined ? srv.originalPrice : (metadata.originalPrice !== undefined ? metadata.originalPrice : (srv.price || 0));
-  const oe = srv.offerEnabled !== undefined ? srv.offerEnabled : (metadata.offerEnabled !== undefined ? metadata.offerEnabled : false);
-  const da = srv.discountAmount !== undefined ? srv.discountAmount : (metadata.discountAmount !== undefined ? metadata.discountAmount : 0);
-  const calculatedPrice = oe ? Math.max(0, Number(op) - Number(da)) : Number(op);
+  // Map database pricing and metadata
+  const price = srv.price !== undefined ? Number(srv.price) : (metadata.price !== undefined ? Number(metadata.price) : (srv.originalPrice !== undefined ? Number(srv.originalPrice) : 0));
+  const offerEnabled = srv.offerEnabled !== undefined ? srv.offerEnabled : (metadata.offerEnabled !== undefined ? metadata.offerEnabled : false);
+  const discountAmount = srv.discountAmount !== undefined ? Number(srv.discountAmount) : (metadata.discountAmount !== undefined ? Number(metadata.discountAmount) : 0);
+  const finalPrice = offerEnabled ? Math.max(0, price - discountAmount) : price;
+
+  const petTypes = srv.petTypes && srv.petTypes.length ? srv.petTypes : (metadata.petTypes || (srv.suitablePets ? [srv.suitablePets] : (srv.suitableFor ? [srv.suitableFor] : ["All Pets"])));
+  const includes = srv.includes && srv.includes.length ? srv.includes : (metadata.includes || []);
 
   const merged = {
-    ...DEFAULTS,
-    ...metadata,
     _id: srv._id || metadata._id || Math.random().toString(36).substring(2, 9),
     name: srv.name || metadata.name || "",
-    price: srv.price !== undefined ? srv.price : calculatedPrice,
-    duration: srv.duration || metadata.duration || "60 min",
-    image: srv.image || metadata.image || "",
-    photo: srv.photo || srv.image || metadata.photo || "",
-    active: srv.active !== undefined ? srv.active : (metadata.active !== undefined ? metadata.active : true),
-    includes: srv.includes && srv.includes.length ? srv.includes : (metadata.includes || []),
-    category: srv.category || metadata.category || "",
-    originalPrice: Number(op),
-    offerEnabled: oe,
+    category: srv.category || metadata.category || "Pet Grooming",
+    image: srv.image || srv.photo || metadata.image || metadata.photo || "",
+    description: description || metadata.description || "",
+    
+    price,
+    offerEnabled,
     offerType: srv.offerType || metadata.offerType || "",
-    discountAmount: Number(da),
     offerTitle: srv.offerTitle || metadata.offerTitle || "",
-    offerEndDate: srv.offerEndDate || metadata.offerEndDate || "",
-    suitablePets: srv.suitablePets || srv.suitableFor || metadata.suitablePets || metadata.suitableFor || "All Pets",
+    discountAmount,
+    finalPrice,
+    
+    duration: srv.duration || metadata.duration || "60 min",
+    petTypes: Array.isArray(petTypes) ? petTypes : [petTypes],
+    includes: Array.isArray(includes) ? includes : [],
+    
     homeServiceAvailable: srv.homeServiceAvailable !== undefined ? srv.homeServiceAvailable : (metadata.homeServiceAvailable !== undefined ? metadata.homeServiceAvailable : false),
-    emergencyServiceAvailable: srv.emergencyServiceAvailable !== undefined ? srv.emergencyServiceAvailable : (metadata.emergencyServiceAvailable !== undefined ? metadata.emergencyServiceAvailable : false),
-    availability: {
-      availableDays: srv.availability?.availableDays || [],
-      availableTimeSlots: srv.availability?.availableTimeSlots || [],
-      maxBookingsPerDay: srv.availability?.maxBookingsPerDay || 10,
-      homeServiceAvailable: srv.homeServiceAvailable !== undefined ? srv.homeServiceAvailable : (srv.availability?.homeServiceAvailable || false),
-      storeVisitAvailable: srv.availability?.storeVisitAvailable !== undefined ? srv.availability.storeVisitAvailable : true,
-      emergencyBookingAvailable: srv.emergencyServiceAvailable !== undefined ? srv.emergencyServiceAvailable : (srv.availability?.emergencyBookingAvailable || false)
-    },
-    specialOffers: {
-      limitedTimeOffer: oe,
-      buyOneGetOne: srv.specialOffers?.buyOneGetOne || false,
-      packageDiscounts: srv.specialOffers?.packageDiscounts || false,
-      membershipDiscounts: srv.specialOffers?.membershipDiscounts || false,
-      couponCodes: srv.specialOffers?.couponCodes || []
-    },
-    description
+    emergencyAvailable: srv.emergencyAvailable !== undefined ? srv.emergencyAvailable : (srv.emergencyServiceAvailable !== undefined ? srv.emergencyServiceAvailable : (metadata.emergencyAvailable !== undefined ? metadata.emergencyAvailable : false)),
+    active: srv.active !== undefined ? srv.active : (metadata.active !== undefined ? metadata.active : true)
   };
   
   return merged;
@@ -134,58 +94,32 @@ export function parseService(srv) {
 
 export function serializeService(srv) {
   if (!srv) return null;
-  
-  const {
-    _id,
-    name,
-    price,
-    duration,
-    image,
-    photo,
-    active,
-    description,
-    ...extra
-  } = srv;
-  
-  // Compress extra fields to short keys, skipping default values to minimize character footprint
-  const compressedMeta = {};
-  for (const [key, val] of Object.entries(extra)) {
-    const shortKey = KEY_MAP[key];
-    if (shortKey && !isDefault(key, val)) {
-      compressedMeta[shortKey] = val;
-    }
-  }
-  
-  const jsonStr = JSON.stringify(compressedMeta);
-  const serializedDesc = `[SERVICE_METADATA:${jsonStr}]${description || ""}`;
-  
-  const op = Number(srv.originalPrice !== undefined ? srv.originalPrice : price || 0);
-  const oe = srv.offerEnabled !== undefined ? srv.offerEnabled : false;
-  const da = Number(srv.discountAmount || 0);
-  const calculatedPrice = oe ? Math.max(0, op - da) : op;
+
+  const price = Number(srv.price || 0);
+  const offerEnabled = !!srv.offerEnabled;
+  const discountAmount = Number(srv.discountAmount || 0);
+  const finalPrice = offerEnabled ? Math.max(0, price - discountAmount) : price;
 
   return {
-    _id,
-    name,
-    price: calculatedPrice,
-    duration: duration || "60 min",
-    image: image || photo || "",
-    photo: photo || image || "",
-    active: active !== undefined ? active : true,
-    includes: srv.includes || [],
-    description: serializedDesc,
+    _id: srv._id,
+    name: srv.name || "",
+    category: srv.category || "Pet Grooming",
+    image: srv.image || srv.photo || "",
+    description: srv.description || "",
     
-    // Also include extra fields directly for native DB support
-    category: srv.category || "",
-    originalPrice: op,
-    offerEnabled: oe,
+    price,
+    offerEnabled,
     offerType: srv.offerType || "",
-    discountAmount: da,
     offerTitle: srv.offerTitle || "",
-    offerEndDate: srv.offerEndDate || null,
-    suitablePets: srv.suitablePets || "All Pets",
-    suitableFor: srv.suitablePets || "All Pets",
+    discountAmount,
+    finalPrice,
+    
+    duration: srv.duration || "60 min",
+    petTypes: Array.isArray(srv.petTypes) ? srv.petTypes : ["All Pets"],
+    includes: Array.isArray(srv.includes) ? srv.includes : [],
+    
     homeServiceAvailable: srv.homeServiceAvailable !== undefined ? srv.homeServiceAvailable : false,
-    emergencyServiceAvailable: srv.emergencyServiceAvailable !== undefined ? srv.emergencyServiceAvailable : false
+    emergencyAvailable: srv.emergencyAvailable !== undefined ? srv.emergencyAvailable : false,
+    active: srv.active !== undefined ? srv.active : true
   };
 }
