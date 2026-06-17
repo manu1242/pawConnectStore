@@ -48,6 +48,16 @@ function Sidebar() {
           <Store size={20} />
           <span>Store Settings</span>
         </NavLink>
+
+        {(user?.businessType === "vet_clinic" || user?.businessType === "both") && (
+          <NavLink
+            to="/vet-clinic"
+            className={({ isActive }) => `sidebar-link ${isActive ? "active" : ""}`}
+          >
+            <Shield size={20} />
+            <span>Vet Clinic Details</span>
+          </NavLink>
+        )}
       </nav>
 
       <div className="sidebar-footer">

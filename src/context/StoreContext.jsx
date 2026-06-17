@@ -171,6 +171,23 @@ export const StoreProvider = ({ children }) => {
     }
   };
 
+  const registerStore = async (storeData) => {
+    try {
+      const res = await axios.post(`${API_BASE}/stores`, storeData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data.success) {
+        setStore(res.data.data.store);
+        showAlert("success", "Store registered successfully!");
+        return true;
+      }
+    } catch (err) {
+      const msg = err.response?.data?.message || "Failed to register store.";
+      showAlert("danger", msg);
+      return false;
+    }
+  };
+
   return (
     <StoreContext.Provider
       value={{
@@ -189,6 +206,7 @@ export const StoreProvider = ({ children }) => {
         handleLogout,
         updateBookingStatus,
         updateStore,
+        registerStore,
         fetchDashboardData,
         API_BASE
       }}
