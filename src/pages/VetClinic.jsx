@@ -267,6 +267,44 @@ function VetClinic() {
         </button>
       </div>
 
+      {/* Clinic Status Alert Banner */}
+      <div style={{ margin: "16px 0 24px" }}>
+        {!store ? (
+          <div style={{ background: "rgba(59, 130, 246, 0.1)", border: "1px solid rgba(59, 130, 246, 0.3)", borderRadius: 12, padding: "16px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 20 }}>ℹ️</span>
+            <div>
+              <h4 style={{ margin: 0, fontWeight: 700, color: "#fff" }}>Onboarding Required</h4>
+              <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>Set up your clinic profile details below. Once registered, it will be sent to the Admin for approval.</p>
+            </div>
+          </div>
+        ) : store.status === "pending" ? (
+          <div style={{ background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.3)", borderRadius: 12, padding: "16px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 20 }}>⏳</span>
+            <div>
+              <h4 style={{ margin: 0, fontWeight: 700, color: "#fff" }}>Pending Admin Approval</h4>
+              <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>Your Veterinary Clinic details are under review. Once approved by the PawConnect Admin, it will immediately appear in the Emergency section of the customer mobile app.</p>
+            </div>
+          </div>
+        ) : store.status === "approved" ? (
+          <div style={{ background: "rgba(16, 185, 129, 0.1)", border: "1px solid rgba(16, 185, 129, 0.3)", borderRadius: 12, padding: "16px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 20 }}>✅</span>
+            <div>
+              <h4 style={{ margin: 0, fontWeight: 700, color: "#fff" }}>Clinic Profile Active</h4>
+              <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>Your clinic is approved and visible in the Emergency section of the customer mobile app.</p>
+            </div>
+          </div>
+        ) : (
+          <div style={{ background: "rgba(239, 68, 68, 0.1)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: 12, padding: "16px 20px", display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 20 }}>❌</span>
+            <div>
+              <h4 style={{ margin: 0, fontWeight: 700, color: "#fff" }}>Clinic Profile Suspended / Rejected</h4>
+              <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>Your clinic details have been suspended or rejected. Please contact support or update your credentials.</p>
+              {store.rejectionReason && <p style={{ margin: "4px 0 0", fontSize: 12, color: "#ef4444" }}><strong>Reason:</strong> {store.rejectionReason}</p>}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Tabs Switcher */}
       <div style={{ display: "flex", gap: 10, margin: "20px 0 24px", borderBottom: "1px solid var(--border-color)", paddingBottom: 10 }}>
         {[
