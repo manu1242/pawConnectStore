@@ -56,8 +56,6 @@ function AppContent() {
   const [ownerName, setOwnerName] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
   const [ownerPhone, setOwnerPhone] = useState("");
-  const [ownerPassword, setOwnerPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [storeName, setStoreName] = useState("");
   const [gstNumber, setGstNumber] = useState("");
@@ -77,8 +75,19 @@ function AppContent() {
   const [storeImages, setStoreImages] = useState("");
   const [ownerIdProof, setOwnerIdProof] = useState("");
   const [storeLogo, setStoreLogo] = useState("");
+  const [profileImage, setProfileImage] = useState("");
 
   const [registerLoading, setRegisterLoading] = useState(false);
+
+  const handleFileChange = (e, setFileState) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFileState(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const STORE_TYPES = [
     "Pet Shop", 
@@ -139,10 +148,6 @@ function AppContent() {
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-    if (ownerPassword !== confirmPassword) {
-      showAlert("danger", "Passwords do not match.");
-      return;
-    }
 
     if (selectedStoreTypes.length === 0) {
       showAlert("danger", "Please select at least one store type.");
@@ -155,8 +160,7 @@ function AppContent() {
         ownerDetails: {
           fullName: ownerName,
           email: ownerEmail,
-          phone: ownerPhone,
-          password: ownerPassword
+          phone: ownerPhone
         },
         businessDetails: {
           name: storeName,
@@ -175,7 +179,8 @@ function AppContent() {
           gstCertificate,
           storeImages: storeImages ? [storeImages] : [],
           ownerIdProof,
-          storeLogo
+          storeLogo,
+          profileImage
         }
       };
 
@@ -271,14 +276,6 @@ function AppContent() {
                     <label className="form-label">Phone Number</label>
                     <input type="tel" className="input-field" value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} required placeholder="9876543210" />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Password</label>
-                    <input type="password" className="input-field" value={ownerPassword} onChange={(e) => setOwnerPassword(e.target.value)} required placeholder="Min 6 chars" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Confirm Password</label>
-                    <input type="password" className="input-field" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required placeholder="Repeat password" />
-                  </div>
                 </div>
               </div>
 
@@ -373,28 +370,120 @@ function AppContent() {
 
               {/* Document Uploads Section */}
               <div style={{ paddingBottom: 10 }}>
-                <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--primary)", marginBottom: 16 }}>5. Upload Verification Documents</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
-                  <div className="form-group">
-                    <label className="form-label">Store License Link / Name</label>
-                    <input type="text" className="input-field" value={storeLicense} onChange={(e) => setStoreLicense(e.target.value)} placeholder="e.g. license_document.pdf" />
+                <h3 style={{ fontSize: 15, fontWeight: 700, color: "var(--primary)", marginBottom: 16 }}>5. Upload Documents</h3>
+                <p style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 16 }}>
+                  Please upload the required branding assets. All legal documents are optional.
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
+                  
+                  {/* Required Assets */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16, background: "var(--bg-tertiary)", padding: 16, borderRadius: 12 }}>
+                    <h4 style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Branding & Profile (Required)</h4>
+                    
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span>Profile Image <span style={{ color: "var(--danger)" }}>*</span></span>
+                        {profileImage && <span style={{ color: "var(--success)", fontSize: 11, fontWeight: 600 }}>✓ Loaded</span>}
+                      </label>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="input-field" 
+                        onChange={(e) => handleFileChange(e, setProfileImage)} 
+                        required 
+                      />
+                      {profileImage && (
+                        <div style={{ marginTop: 8 }}>
+                          <img src={profileImage} alt="Profile Preview" style={{ width: 50, height: 50, borderRadius: "50%", objectFit: "cover", border: "1.5px solid var(--primary)" }} />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span>Store Logo <span style={{ color: "var(--danger)" }}>*</span></span>
+                        {storeLogo && <span style={{ color: "var(--success)", fontSize: 11, fontWeight: 600 }}>✓ Loaded</span>}
+                      </label>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="input-field" 
+                        onChange={(e) => handleFileChange(e, setStoreLogo)} 
+                        required 
+                      />
+                      {storeLogo && (
+                        <div style={{ marginTop: 8 }}>
+                          <img src={storeLogo} alt="Logo Preview" style={{ width: 50, height: 50, borderRadius: 8, objectFit: "cover", border: "1.5px solid var(--primary)" }} />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span>Store Image <span style={{ color: "var(--danger)" }}>*</span></span>
+                        {storeImages && <span style={{ color: "var(--success)", fontSize: 11, fontWeight: 600 }}>✓ Loaded</span>}
+                      </label>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="input-field" 
+                        onChange={(e) => handleFileChange(e, setStoreImages)} 
+                        required 
+                      />
+                      {storeImages && (
+                        <div style={{ marginTop: 8 }}>
+                          <img src={storeImages} alt="Store Preview" style={{ width: 100, height: 60, borderRadius: 6, objectFit: "cover", border: "1.5px solid var(--primary)" }} />
+                        </div>
+                      )}
+                    </div>
+
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">GST Certificate Link / Name</label>
-                    <input type="text" className="input-field" value={gstCertificate} onChange={(e) => setGstCertificate(e.target.value)} placeholder="e.g. gst_document.pdf" />
+
+                  {/* Optional Documents */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16, background: "var(--bg-tertiary)", padding: 16, borderRadius: 12 }}>
+                    <h4 style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 8 }}>Legal & Verification (Optional)</h4>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span>Store License</span>
+                        {storeLicense && <span style={{ color: "var(--success)", fontSize: 11, fontWeight: 600 }}>✓ Uploaded</span>}
+                      </label>
+                      <input 
+                        type="file" 
+                        accept=".pdf,image/*" 
+                        className="input-field" 
+                        onChange={(e) => handleFileChange(e, setStoreLicense)} 
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span>GST Certificate</span>
+                        {gstCertificate && <span style={{ color: "var(--success)", fontSize: 11, fontWeight: 600 }}>✓ Uploaded</span>}
+                      </label>
+                      <input 
+                        type="file" 
+                        accept=".pdf,image/*" 
+                        className="input-field" 
+                        onChange={(e) => handleFileChange(e, setGstCertificate)} 
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span>Owner ID Proof (Aadhaar/PAN)</span>
+                        {ownerIdProof && <span style={{ color: "var(--success)", fontSize: 11, fontWeight: 600 }}>✓ Uploaded</span>}
+                      </label>
+                      <input 
+                        type="file" 
+                        accept=".pdf,image/*" 
+                        className="input-field" 
+                        onChange={(e) => handleFileChange(e, setOwnerIdProof)} 
+                      />
+                    </div>
+
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Store Image Link / Name</label>
-                    <input type="text" className="input-field" value={storeImages} onChange={(e) => setStoreImages(e.target.value)} placeholder="e.g. storefront.jpg" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Owner ID Proof (Aadhaar/PAN)</label>
-                    <input type="text" className="input-field" value={ownerIdProof} onChange={(e) => setOwnerIdProof(e.target.value)} placeholder="e.g. id_aadhaar.jpg" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Store Logo Link / Name</label>
-                    <input type="text" className="input-field" value={storeLogo} onChange={(e) => setStoreLogo(e.target.value)} placeholder="e.g. logo.png" />
-                  </div>
+
                 </div>
               </div>
 
