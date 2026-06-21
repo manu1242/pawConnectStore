@@ -72,7 +72,7 @@ export const StoreProvider = ({ children }) => {
       let currentUser = null;
       if (profileRes.data.success && profileRes.data.data?.user) {
         currentUser = profileRes.data.data.user;
-        if (currentUser.role !== "manager") {
+        if (currentUser.role !== "manager" && currentUser.role !== "store_owner") {
           handleLogout();
           showAlert("danger", "Access Denied: The business console is only for Store Owners.");
           return;
