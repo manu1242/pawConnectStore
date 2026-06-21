@@ -16,6 +16,21 @@ import ServiceForm from "./pages/Services/ServiceForm";
 import Promos from "./pages/Promos";
 import VetClinic from "./pages/VetClinic";
 
+// New Dashboard & Module Pages
+import Dashboard from "./pages/Dashboard";
+import Orders from "./pages/Orders";
+import Revenue from "./pages/Revenue";
+import Notifications from "./pages/Notifications";
+import Settings from "./pages/Settings";
+import Support from "./pages/Support";
+import ProductsManager from "./pages/ProductsManager";
+import VeterinaryManager from "./pages/VeterinaryManager";
+import GroomingManager from "./pages/GroomingManager";
+import DogWalkingManager from "./pages/DogWalkingManager";
+import BoardingManager from "./pages/BoardingManager";
+import TrainingManager from "./pages/TrainingManager";
+import EmergencyManager from "./pages/EmergencyManager";
+
 function AppContent() {
   const { 
     token, 
@@ -173,15 +188,58 @@ function AppContent() {
         )}
 
         <Routes>
+          {/* Always Visible Core Pages */}
+          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/bookings" element={<Bookings />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/revenue" element={<Revenue />} />
+          <Route path="/notifications" element={<Notifications />} />
           <Route path="/profile" element={<StoreProfile />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/support" element={<Support />} />
+
+          {/* Legacy/Standard Service/Promos Pages */}
           <Route path="/services" element={<ServicesList />} />
           <Route path="/services/new" element={<ServiceForm />} />
           <Route path="/services/:id" element={<ServiceDetails />} />
           <Route path="/services/:id/edit" element={<ServiceForm />} />
           <Route path="/promos" element={<Promos />} />
           <Route path="/vet-clinic" element={<VetClinic />} />
-          <Route path="*" element={<Navigate to="/bookings" replace />} />
+
+          {/* Granular Module Pages Protected by Frontend Permission check */}
+          {user?.permissions?.includes("toys") && (
+            <Route path="/toys" element={<ProductsManager category="toys" title="Toys Inventory" />} />
+          )}
+          {user?.permissions?.includes("food") && (
+            <Route path="/food" element={<ProductsManager category="food" title="Food & Nutrition" />} />
+          )}
+          {user?.permissions?.includes("medicines") && (
+            <Route path="/medicines" element={<ProductsManager category="medicines" title="Medicines Shop" />} />
+          )}
+          {user?.permissions?.includes("accessories") && (
+            <Route path="/accessories" element={<ProductsManager category="accessories" title="Accessories Shop" />} />
+          )}
+          {user?.permissions?.includes("veterinary") && (
+            <Route path="/veterinary" element={<VeterinaryManager />} />
+          )}
+          {user?.permissions?.includes("grooming") && (
+            <Route path="/grooming" element={<GroomingManager />} />
+          )}
+          {user?.permissions?.includes("walking") && (
+            <Route path="/dog-walking" element={<DogWalkingManager />} />
+          )}
+          {user?.permissions?.includes("boarding") && (
+            <Route path="/boarding" element={<BoardingManager />} />
+          )}
+          {user?.permissions?.includes("training") && (
+            <Route path="/training" element={<TrainingManager />} />
+          )}
+          {user?.permissions?.includes("emergency") && (
+            <Route path="/emergency" element={<EmergencyManager />} />
+          )}
+
+          {/* Default Redirection */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </main>
     </div>
