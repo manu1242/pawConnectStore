@@ -124,49 +124,7 @@ function AppContent() {
             </button>
           </form>
 
-          <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--border-color)" }}>
-            <span className="form-label" style={{ marginBottom: 12, display: "block", fontSize: "11px" }}>Quick Access Manager Accounts</span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {[
-                { name: "Janu", email: "yallajnaneswari@gmail.com" },
-                { name: "Manu", email: "yallamanohar77@gmail.com" },
-                { name: "Rajesh", email: "raajeshande@gmail.com" }
-              ].map((m) => (
-                <button
-                  key={m.email}
-                  type="button"
-                  onClick={() => {
-                    setEmail(m.email);
-                    setPassword("123456");
-                  }}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    background: "var(--bg-tertiary)",
-                    border: "1px solid var(--border-color)",
-                    borderRadius: "10px",
-                    padding: "10px 14px",
-                    color: "var(--text-secondary)",
-                    cursor: "pointer",
-                    fontSize: "13px",
-                    transition: "var(--transition-smooth)"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = "var(--primary)";
-                    e.currentTarget.style.color = "#fff";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = "var(--border-color)";
-                    e.currentTarget.style.color = "var(--text-secondary)";
-                  }}
-                >
-                  <span style={{ fontWeight: 600 }}>{m.name}</span>
-                  <span style={{ fontSize: 11, opacity: 0.8 }}>{m.email}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+      
         </div>
       </div>
     );
